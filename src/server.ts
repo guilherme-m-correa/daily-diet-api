@@ -1,18 +1,14 @@
-import Fastify from 'fastify'
-
-const fastify = Fastify({
-  logger: true,
-})
-
-fastify.get('/', async (_, reply) => {
-  return reply.send({ message: 'Hello World' })
-})
+import { app } from './app'
+import { env } from './config/env'
 
 const start = async () => {
   try {
-    await fastify.listen({ port: 3333 })
-  } catch (err) {
-    fastify.log.error(err)
+    await app.listen({
+      port: env.PORT,
+    })
+    console.log('HTTP Server Running!')
+  } catch (error) {
+    app.log.error(error)
     process.exit(1)
   }
 }
