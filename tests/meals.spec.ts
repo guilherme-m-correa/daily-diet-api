@@ -711,4 +711,81 @@ describe('Meal routes', () => {
       expect(deleteMealResponse.status).toBe(401)
     })
   })
+
+  describe('GET /meals/metrics', () => {
+    it('should get the metrics from the meals', async () => {
+      const arrange = {
+        breakfast: {
+          name: 'Breakfast',
+          description: 'A nice breakfast',
+          date: new Date(),
+          isOnDiet: true,
+        },
+        lunch: {
+          name: 'Lunch',
+          description: 'A nice lunch',
+          date: new Date(),
+          isOnDiet: true,
+        },
+        dinner: {
+          name: 'Dinner',
+          description: 'A nice dinner',
+          date: new Date(),
+          isOnDiet: true,
+        },
+      }
+
+      const createUserResponse = await request(app.server).post('/users').send({
+        name: 'John Doe',
+        email: 'john.doe@example.com',
+      })
+
+      const cookie = createUserResponse.headers['set-cookie'][0]
+
+      await request(app.server)
+        .post('/meals')
+        .send(arrange.breakfast)
+        .set('Cookie', cookie)
+
+      await request(app.server)
+        .post('/meals')
+        .send(arrange.lunch)
+        .set('Cookie', cookie)
+
+      await request(app.server)
+        .post('/meals')
+        .send(arrange.dinner)
+        .set('Cookie', cookie)
+
+      const getMealsMetricsResponse = await request(app.server)
+        .get('/meals/metrics')
+        .set('Cookie', cookie)
+
+      expect(getMealsMetricsResponse.status).toBe(200)
+      expect(getMealsMetricsResponse.body).toMatchObject({
+        metrics: {
+          totalMeals: 3,
+          totalMealsWithinDiet: 3,
+          totalMealsOutsideDiet: 0,
+          bestDietSequence: 3,
+        },
+      })
+    })
+
+    it('should NOT get the metrics from the meals if the sessionId cookie is not provided', async () => {
+      const getMealsMetricsResponse = await request(app.server).get(
+        '/meals/metrics',
+      )
+
+      expect(getMealsMetricsResponse.status).toBe(401)
+    })
+
+    it('should NOT get the metrics from the meals if the sessionId cookie is invalid', async () => {
+      const getMealsMetricsResponse = await request(app.server)
+        .get('/meals/metrics')
+        .set('Cookie', 'sessionId=invalid-session-id')
+
+      expect(getMealsMetricsResponse.status).toBe(401)
+    })
+  })
 })
