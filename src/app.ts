@@ -3,9 +3,10 @@ import fastify from 'fastify'
 import { z } from 'zod'
 import { usersRoutes } from './routes/users.routes'
 import { mealsRoutes } from './routes/meals.routes'
+import { env } from './config/env'
 
 export const app = fastify({
-  logger: true,
+  logger: env.NODE_ENV === 'development',
 })
 
 app.get('/', async (request, reply) => {
