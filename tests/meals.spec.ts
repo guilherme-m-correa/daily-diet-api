@@ -409,6 +409,52 @@ describe('Meal routes', () => {
       })
     })
 
+    it('should throw an error if the id is not a valid uuid', async () => {
+      const createUserResponse = await request(app.server).post('/users').send({
+        name: 'John Doe',
+        email: 'john.doe@example.com',
+      })
+
+      const cookie = createUserResponse.headers['set-cookie'][0]
+
+      const invalidMealId = 'invalid-meal-id'
+
+      const getMealResponse = await request(app.server)
+        .get(`/meals/${invalidMealId}`)
+        .set('Cookie', cookie)
+
+      expect(getMealResponse.status).toBe(400)
+      expect(getMealResponse.body).toMatchObject({
+        errors: [
+          {
+            path: 'mealId',
+            message: 'Invalid uuid',
+          },
+        ],
+      })
+    })
+
+    it('should NOT get a meal by id if the meal does not exist', async () => {
+      const createUserResponse = await request(app.server).post('/users').send({
+        name: 'John Doe',
+        email: 'john.doe@example.com',
+      })
+
+      const cookie = createUserResponse.headers['set-cookie'][0]
+
+      const nonExistingMealId = '3c825cb2-6226-4400-bb59-b5847831d08c'
+
+      const getMealResponse = await request(app.server)
+        .get(`/meals/${nonExistingMealId}`)
+        .set('Cookie', cookie)
+
+      expect(getMealResponse.status).toBe(404)
+
+      expect(getMealResponse.body).toMatchObject({
+        message: 'Meal not found',
+      })
+    })
+
     it('should NOT get a meal by id if the sessionId cookie is not provided', async () => {
       const getMealResponse = await request(app.server).get('/meals/1')
 

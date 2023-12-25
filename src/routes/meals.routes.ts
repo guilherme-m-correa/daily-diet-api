@@ -77,7 +77,7 @@ export async function mealsRoutes(app: FastifyInstance) {
         .first()
 
       if (!meal) {
-        return reply.status(404).send()
+        return reply.status(404).send({ message: 'Meal not found' })
       }
 
       return reply.status(200).send({
