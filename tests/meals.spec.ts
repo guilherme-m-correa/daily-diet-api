@@ -423,4 +423,152 @@ describe('Meal routes', () => {
       expect(getMealResponse.status).toBe(401)
     })
   })
+
+  describe('PUT /meals/:mealId', () => {
+    it('should update a meal by id', async () => {
+      const arrange = {
+        name: 'Breakfast',
+        description: 'A nice breakfast',
+        date: new Date(),
+        isOnDiet: true,
+        updatedName: 'Lunch',
+        updatedDescription: 'A nice lunch',
+        updatedDate: new Date(),
+        updatedIsOnDiet: false,
+      }
+
+      const createUserResponse = await request(app.server).post('/users').send({
+        name: 'John Doe',
+        email: 'john.doe@example.com',
+      })
+
+      const cookie = createUserResponse.headers['set-cookie'][0]
+
+      await request(app.server)
+        .post('/meals')
+        .send({
+          name: arrange.name,
+          description: arrange.description,
+          date: arrange.date,
+          isOnDiet: arrange.isOnDiet,
+        })
+        .set('Cookie', cookie)
+
+      const listMealsResponse = await request(app.server)
+        .get('/meals')
+        .set('Cookie', cookie)
+
+      const mealId = listMealsResponse.body.meals[0].id
+
+      const updateMealResponse = await request(app.server)
+        .put(`/meals/${mealId}`)
+        .send({
+          name: arrange.updatedName,
+          description: arrange.updatedDescription,
+          date: arrange.updatedDate,
+          isOnDiet: arrange.updatedIsOnDiet,
+        })
+        .set('Cookie', cookie)
+
+      expect(updateMealResponse.status).toBe(204)
+
+      const getMealResponse = await request(app.server)
+        .get(`/meals/${mealId}`)
+        .set('Cookie', cookie)
+
+      expect(getMealResponse.status).toBe(200)
+      expect(getMealResponse.body).toMatchObject({
+        meal: {
+          id: mealId,
+          name: arrange.updatedName,
+          description: arrange.updatedDescription,
+          date: arrange.updatedDate.toISOString(),
+          isOnDiet: arrange.updatedIsOnDiet,
+        },
+      })
+    })
+
+    it('should throw an error if the id is not a valid uuid', async () => {
+      const arrange = {
+        updatedDescription: 'A nice lunch',
+        updatedDate: new Date(),
+        updatedIsOnDiet: false,
+      }
+
+      const createUserResponse = await request(app.server).post('/users').send({
+        name: 'John Doe',
+        email: 'john.doe@example.com',
+      })
+
+      const cookie = createUserResponse.headers['set-cookie'][0]
+
+      const invalidMealId = 'invalid-meal-id'
+
+      const updateMealResponse = await request(app.server)
+        .put(`/meals/${invalidMealId}`)
+        .send({
+          description: arrange.updatedDescription,
+          date: arrange.updatedDate,
+          isOnDiet: arrange.updatedIsOnDiet,
+        })
+        .set('Cookie', cookie)
+
+      expect(updateMealResponse.status).toBe(400)
+      expect(updateMealResponse.body).toMatchObject({
+        errors: [
+          {
+            path: 'mealId',
+            message: 'Invalid uuid',
+          },
+        ],
+      })
+    })
+
+    it('should NOT update a meal by id if the meal does not exist', async () => {
+      const arrange = {
+        updatedName: 'Lunch',
+        updatedDescription: 'A nice lunch',
+        updatedDate: new Date(),
+        updatedIsOnDiet: false,
+      }
+
+      const createUserResponse = await request(app.server).post('/users').send({
+        name: 'John Doe',
+        email: 'john.doe@example.com',
+      })
+
+      const cookie = createUserResponse.headers['set-cookie'][0]
+
+      const nonExistingMealId = '3c825cb2-6226-4400-bb59-b5847831d08c'
+
+      const updateMealResponse = await request(app.server)
+        .put(`/meals/${nonExistingMealId}`)
+        .send({
+          name: arrange.updatedName,
+          description: arrange.updatedDescription,
+          date: arrange.updatedDate,
+          isOnDiet: arrange.updatedIsOnDiet,
+        })
+        .set('Cookie', cookie)
+
+      expect(updateMealResponse.status).toBe(404)
+      expect(updateMealResponse.body).toMatchObject({
+        message: 'Meal not found',
+      })
+    })
+
+    it('should NOT update a meal by id if the sessionId cookie is not provided', async () => {
+      const updateMealResponse = await request(app.server).put('/meals/1')
+
+      expect(updateMealResponse.status).toBe(401)
+    })
+
+    it('should NOT update a meal by id if the sessionId cookie is invalid', async () => {
+      const updateMealResponse = await request(app.server)
+        .put('/meals/1')
+        .set('Cookie', 'sessionId=invalid-session-id')
+
+      expect(updateMealResponse.status).toBe(401)
+    })
+  })
 })
