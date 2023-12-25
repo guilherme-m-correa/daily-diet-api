@@ -365,4 +365,62 @@ describe('Meal routes', () => {
       })
     })
   })
+
+  describe('GET /meals/:mealId', () => {
+    it('should get a meal by id', async () => {
+      const arrange = {
+        name: 'Breakfast',
+        description: 'A nice breakfast',
+        date: new Date(),
+        isOnDiet: true,
+      }
+
+      const createUserResponse = await request(app.server).post('/users').send({
+        name: 'John Doe',
+        email: 'john.doe@example.com',
+      })
+
+      const cookie = createUserResponse.headers['set-cookie'][0]
+
+      await request(app.server)
+        .post('/meals')
+        .send(arrange)
+        .set('Cookie', cookie)
+
+      const listMealsResponse = await request(app.server)
+        .get('/meals')
+        .set('Cookie', cookie)
+
+      const mealId = listMealsResponse.body.meals[0].id
+
+      const getMealResponse = await request(app.server)
+        .get(`/meals/${mealId}`)
+        .set('Cookie', cookie)
+
+      expect(getMealResponse.status).toBe(200)
+      expect(getMealResponse.body).toMatchObject({
+        meal: {
+          id: mealId,
+          name: arrange.name,
+          description: arrange.description,
+          date: arrange.date.toISOString(),
+          isOnDiet: arrange.isOnDiet,
+        },
+      })
+    })
+
+    it('should NOT get a meal by id if the sessionId cookie is not provided', async () => {
+      const getMealResponse = await request(app.server).get('/meals/1')
+
+      expect(getMealResponse.status).toBe(401)
+    })
+
+    it('should NOT get a meal by id if the sessionId cookie is invalid', async () => {
+      const getMealResponse = await request(app.server)
+        .get('/meals/1')
+        .set('Cookie', 'sessionId=invalid-session-id')
+
+      expect(getMealResponse.status).toBe(401)
+    })
+  })
 })
