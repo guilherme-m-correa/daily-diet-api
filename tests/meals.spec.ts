@@ -254,4 +254,115 @@ describe('Meal routes', () => {
       })
     })
   })
+
+  describe('GET /meals', () => {
+    it('should list all meals from user', async () => {
+      const arrange = {
+        name: 'Breakfast',
+        description: 'A nice breakfast',
+        date: new Date(),
+        isOnDiet: true,
+      }
+
+      const createUserResponse = await request(app.server).post('/users').send({
+        name: 'John Doe',
+        email: 'john.doe@example.com',
+      })
+
+      const cookie = createUserResponse.headers['set-cookie'][0]
+
+      await request(app.server)
+        .post('/meals')
+        .send(arrange)
+        .set('Cookie', cookie)
+
+      const getMealsResponse = await request(app.server)
+        .get('/meals')
+        .set('Cookie', cookie)
+
+      expect(getMealsResponse.status).toBe(200)
+      expect(getMealsResponse.body).toMatchObject({
+        meals: [
+          {
+            id: expect.any(String),
+            name: arrange.name,
+            description: arrange.description,
+            date: arrange.date.toISOString(),
+            isOnDiet: arrange.isOnDiet,
+          },
+        ],
+      })
+    })
+
+    it('should NOT list all meals from user if the sessionId cookie is not provided', async () => {
+      const getMealsResponse = await request(app.server).get('/meals')
+
+      expect(getMealsResponse.status).toBe(401)
+    })
+
+    it('should NOT list all meals from user if the sessionId cookie is invalid', async () => {
+      const getMealsResponse = await request(app.server)
+        .get('/meals')
+        .set('Cookie', 'sessionId=invalid-session-id')
+
+      expect(getMealsResponse.status).toBe(401)
+    })
+
+    it('should NOT list meals from another user', async () => {
+      const arrange = {
+        name: 'Breakfast',
+        description: 'A nice breakfast',
+        date: new Date(),
+        isOnDiet: true,
+      }
+
+      const createUserResponse = await request(app.server).post('/users').send({
+        name: 'John Doe',
+        email: 'john.doe@example.com',
+      })
+
+      const cookie = createUserResponse.headers['set-cookie'][0]
+
+      await request(app.server)
+        .post('/meals')
+        .send(arrange)
+        .set('Cookie', cookie)
+
+      const createAnotherUserResponse = await request(app.server)
+        .post('/users')
+        .send({
+          name: 'Jane Doe',
+          email: 'jane.doe@example.com',
+        })
+
+      const anotherCookie = createAnotherUserResponse.headers['set-cookie'][0]
+
+      await request(app.server)
+        .post('/meals')
+        .send({
+          name: 'Dinner',
+          description: 'A nice dinner',
+          date: new Date(),
+          isOnDiet: true,
+        })
+        .set('Cookie', anotherCookie)
+
+      const getMealsResponse = await request(app.server)
+        .get('/meals')
+        .set('Cookie', cookie)
+
+      expect(getMealsResponse.status).toBe(200)
+      expect(getMealsResponse.body).toMatchObject({
+        meals: [
+          {
+            id: expect.any(String),
+            name: arrange.name,
+            description: arrange.description,
+            date: arrange.date.toISOString(),
+            isOnDiet: arrange.isOnDiet,
+          },
+        ],
+      })
+    })
+  })
 })

@@ -39,4 +39,26 @@ export async function mealsRoutes(app: FastifyInstance) {
       return reply.status(201).send()
     },
   )
+
+  app.get(
+    '/',
+    { preHandler: [checkIfSessionIdExists] },
+    async (request, reply) => {
+      const { user } = request
+
+      const meals = await knex('meals')
+        .where({ user_id: user.id })
+        .orderBy('date', 'desc')
+
+      const mappedMeals = meals.map((meal) => ({
+        id: meal.id,
+        name: meal.name,
+        description: meal.description,
+        date: meal.date,
+        isOnDiet: Boolean(meal.is_on_diet),
+      }))
+
+      return reply.status(200).send({ meals: mappedMeals })
+    },
+  )
 }
