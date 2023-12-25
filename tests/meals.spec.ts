@@ -617,4 +617,98 @@ describe('Meal routes', () => {
       expect(updateMealResponse.status).toBe(401)
     })
   })
+
+  describe('DELETE /meals/:mealId', () => {
+    it('should delete a meal by id', async () => {
+      const arrange = {
+        name: 'Breakfast',
+        description: 'A nice breakfast',
+        date: new Date(),
+        isOnDiet: true,
+      }
+
+      const createUserResponse = await request(app.server).post('/users').send({
+        name: 'John Doe',
+        email: 'john.doe@example.com',
+      })
+
+      const cookie = createUserResponse.headers['set-cookie'][0]
+
+      await request(app.server)
+        .post('/meals')
+        .send(arrange)
+        .set('Cookie', cookie)
+
+      const listMealsResponse = await request(app.server)
+        .get('/meals')
+        .set('Cookie', cookie)
+
+      const mealId = listMealsResponse.body.meals[0].id
+
+      const deleteMealResponse = await request(app.server)
+        .delete(`/meals/${mealId}`)
+        .set('Cookie', cookie)
+
+      expect(deleteMealResponse.status).toBe(204)
+    })
+
+    it('should throw an error if the id is not a valid uuid', async () => {
+      const createUserResponse = await request(app.server).post('/users').send({
+        name: 'John Doe',
+        email: 'john.doe@example.com',
+      })
+
+      const cookie = createUserResponse.headers['set-cookie'][0]
+
+      const invalidMealId = 'invalid-meal-id'
+
+      const deleteMealResponse = await request(app.server)
+        .delete(`/meals/${invalidMealId}`)
+        .set('Cookie', cookie)
+
+      expect(deleteMealResponse.status).toBe(400)
+      expect(deleteMealResponse.body).toMatchObject({
+        errors: [
+          {
+            path: 'mealId',
+            message: 'Invalid uuid',
+          },
+        ],
+      })
+    })
+
+    it('should NOT delete a meal by id if the meal does not exist', async () => {
+      const createUserResponse = await request(app.server).post('/users').send({
+        name: 'John Doe',
+        email: 'john.doe@example.com',
+      })
+
+      const cookie = createUserResponse.headers['set-cookie'][0]
+
+      const nonExistingMealId = '3c825cb2-6226-4400-bb59-b5847831d08c'
+
+      const deleteMealResponse = await request(app.server)
+        .delete(`/meals/${nonExistingMealId}`)
+        .set('Cookie', cookie)
+
+      expect(deleteMealResponse.status).toBe(404)
+      expect(deleteMealResponse.body).toMatchObject({
+        message: 'Meal not found',
+      })
+    })
+
+    it('should NOT delete a meal by id if the sessionId cookie is not provided', async () => {
+      const deleteMealResponse = await request(app.server).delete('/meals/1')
+
+      expect(deleteMealResponse.status).toBe(401)
+    })
+
+    it('should NOT delete a meal by id if the sessionId cookie is invalid', async () => {
+      const deleteMealResponse = await request(app.server)
+        .delete('/meals/1')
+        .set('Cookie', 'sessionId=invalid-session-id')
+
+      expect(deleteMealResponse.status).toBe(401)
+    })
+  })
 })
