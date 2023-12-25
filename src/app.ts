@@ -2,6 +2,7 @@ import cookie from '@fastify/cookie'
 import fastify from 'fastify'
 import { z } from 'zod'
 import { usersRoutes } from './routes/users.routes'
+import { mealsRoutes } from './routes/meals.routes'
 
 export const app = fastify({
   logger: true,
@@ -14,6 +15,7 @@ app.get('/', async (request, reply) => {
 app.register(cookie)
 
 app.register(usersRoutes, { prefix: 'users' })
+app.register(mealsRoutes, { prefix: 'meals' })
 
 app.setErrorHandler((error, request, reply) => {
   if (error instanceof z.ZodError) {
