@@ -1,7 +1,7 @@
-# Meal Tracker API
+# Daily Diet API
 
 ## Overview
-The Meal Tracker API is a user-centric tool designed to help users manage and track their meals, especially focusing on diet adherence. It allows users to create a profile, record meals, and access various metrics related to their dietary habits.
+The Daily Diet API is a user-centric tool designed to help users manage and track their meals, especially focusing on diet adherence. It allows users to create a profile, record meals, and access various metrics related to their dietary habits.
 
 ## Technologies
 
